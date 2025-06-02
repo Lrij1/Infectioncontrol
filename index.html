@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ආසාදන පාලනය සහ අත් සේදීම පිළිබඳ ප්‍රශ්නාවලිය</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            background-color: #F0F8FF; /* Alice Blue - light, clean background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Aligns content to the top */
+            min-height: 100vh; /* Ensures full viewport height */
+            margin: 20px; /* Adds some margin around the body content */
+            color: #333;
+        }
+        .quiz-container {
+            background-color: #FFFFFF; /* White for the main container */
+            padding: 30px;
+            border-radius: 12px; /* More rounded corners */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Softer shadow */
+            width: 100%;
+            max-width: 600px;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .quiz-header h1 {
+            color: #00796b; /* Teal for header */
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+        .question-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .options-container label {
+            display: block;
+            background-color: #E6F7FF; /* Very light blue for options */
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px; /* Rounded corners for options */
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            position: relative; /* For custom radio button */
+            padding-left: 40px; /* Space for custom radio */
+            border: 1px solid #cceeff; /* Subtle border */
+        }
+        .options-container label:hover {
+            background-color: #D9EEFF; /* Slightly darker blue on hover */
+            border-color: #99ccff;
+        }
+        /* Hide default radio button */
+        .options-container input[type="radio"] {
+            display: none;
+        }
+        /* Custom radio button styling */
+        .options-container label::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid #99ccff; /* Border for custom radio */
+            border-radius: 50%;
+            background-color: #fff;
+        }
+        .options-container input[type="radio"]:checked + label::before {
+            border-color: #2196F3; /* Match button color */
+            background-color: #2196F3; /* Match button color */
+        }
+        .options-container input[type="radio"]:checked + label::after {
+            content: '';
+            position: absolute;
+            left: 21px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #fff; /* White dot inside checked radio */
+        }
+
+        .feedback-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px; /* Rounded corners for feedback */
+            border: 1px solid #ddd;
+            display: none; /* Hidden by default */
+            font-weight: bold;
+        }
+        .feedback-container.show {
+            display: block;
+        }
+        .feedback-container.correct {
+            background-color: #d4edda; /* Light green */
+            border-color: #28a745; /* Darker green border */
+            color: #155724; /* Dark green text */
+        }
+        .feedback-container.incorrect {
+            background-color: #f8d7da; /* Light red */
+            border-color: #dc3545; /* Darker red border */
+            color: #721c24; /* Dark red text */
+        }
+        .button-container {
+            text-align: right; /* Align button to the right */
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 25px; /* Larger buttons */
+            border: none;
+            border-radius: 8px; /* Rounded corners for buttons */
+            background-color: #2196F3; /* Material Design Blue */
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Button shadow */
+        }
+        button:hover {
+            background-color: #1976D2; /* Darker blue on hover */
+            transform: translateY(-1px); /* Slight lift effect */
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        .score-container {
+            text-align: center;
+            font-size: 1.6em;
+            margin-top: 30px;
+            color: #00796b; /* Teal for score */
+        }
+        .score-container button {
+            margin-top: 25px;
+        }
+        /* Styling for correct/incorrect answers after selection */
+        .options-container label.correct-answer {
+            background-color: #d4edda; /* Light green */
+            border: 1px solid #28a745;
+        }
+        .options-container label.incorrect-answer {
+            background-color: #f8d7da; /* Light red */
+            border: 1px solid #dc3545;
+        }
+        .options-container label.selected-incorrect {
+            background-color: #f8d7da; /* Ensure user's incorrect choice is red */
+            border: 1px solid #dc3545;
+        }
+        .options-container label.disabled {
+            pointer-events: none; /* Disable clicking after selection */
+            opacity: 0.8; /* Slightly dim disabled options, but keep them readable */
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>ආසාදන පාලනය සහ අත් සේදීම පිළිබඳ ප්‍රශ්නාවලිය</h1>
+        </div>
+
+        <div id="quiz-area">
+            <h2 id="question-number">ප්‍රශ්නය X න් Y</h2>
+            <p class="question-text" id="question-text"></p>
+            <div class="options-container" id="options-container"></div>
+            <div class="feedback-container" id="feedback-container">
+                <p id="feedback-text"></p>
+            </div>
+            <div class="button-container">
+                <button id="next-button" disabled>ඊළඟ ප්‍රශ්නය</button>
+            </div>
+        </div>
+
+        <div id="result-area" class="score-container" style="display: none;">
+            <h2>ප්‍රශ්නාවලිය අවසන්!</h2>
+            <p>ඔබේ ලකුණු: <span id="score-display">0</span> / <span id="total-questions-display">0</span></p>
+            <button id="retake-quiz-button">ප්‍රශ්නාවලිය නැවත කරන්න</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = {
+          "questions": [
+            {
+              "question": "සෞඛ්‍ය සේවා සැකසුම් තුළ ඵලදායී ආසාදන පාලනයේ ප්‍රධාන අරමුණ කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "සෞඛ්‍ය සේවා පිරිවැය අඩු කිරීම",
+                  "rationale": "ආසාදන වැළැක්වීමෙන් පිරිවැය ඉතිරි කර ගත හැකි වුවද, මෙය ද්විතීයික ප්‍රතිලාභයක් මිස ප්‍රාථමික සායනික අරමුණ නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "රෝගීන්ගේ පහසුව වැඩි දියුණු කිරීම",
+                  "rationale": "රෝගීන්ගේ පහසුව වැදගත් වුවද, ආසාදන පාලන ක්‍රියාමාර්ග සමහර විට රෝගීන්ට තාවකාලික අපහසුතා ඇති කළ හැකිය.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "රෝගකාරක සම්ප්‍රේෂණය වීමේ අවදානම අවම කිරීම",
+                  "rationale": "මෙය රෝගීන්, කාර්ය මණ්ඩලය සහ පරිසරය අතර විෂබීජ පැතිරීම නැවැත්වීමේ මූලික අරමුණ සෘජුවම ආමන්ත්‍රණය කරයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "රෝගීන්ගේ සුවවීමේ කාලය වේගවත් කිරීම",
+                  "rationale": "මෙය ආසාදන වැළැක්වීමේ ධනාත්මක ප්‍රතිඵලයක් වන නමුත්, සෘජු ඉලක්කය වන්නේ සම්ප්‍රේෂණය නතර කිරීමයි.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "පහත සඳහන් දේවලින් ආසාදන දාමයේ (Chain of Infection) කොටසක් නොවන අංගය කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "රෝගයට ගොදුරු විය හැකි ධාරකයා (Susceptible Host)",
+                  "rationale": "ආසාදනයක් සිදුවීමට නම්, දාමයේ අවසාන සහ අවශ්‍ය සම්බන්ධය වන්නේ රෝගයට ගොදුරු විය හැකි ධාරකයායි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ප්‍රවාහන ක්‍රමය (Mode of Transportation)",
+                  "rationale": "නිවැරදි යෙදුම 'සම්ප්‍රේෂණ ක්‍රමය (Mode of Transmission)' යන්නයි. මෙම විකල්පය සමාන නමුත් වැරදි වචනයක් භාවිතා කරයි, එබැවින් එය අංගයක් නොවේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "ඇතුල් වීමේ මාර්ගය (Portal of Entry)",
+                  "rationale": "ඇතුල් වීමේ මාර්ගය යනු රෝගකාරකයක් ධාරකයාට ඇතුළු වන මාර්ගය වන අතර එය දාමයේ ප්‍රධාන සම්බන්ධයකි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "බෝවන කාරකය (Infectious Agent)",
+                  "rationale": "බෝවන කාරකය හෙවත් රෝගකාරකය ආසාදන දාමයේ පළමු සහ අත්‍යවශ්‍ය සම්බන්ධයයි.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "පැරමෙඩිකල් වෘත්තිකයෙකු දූෂිත ගිලන් රථයක් ස්පර්ශ කර, පසුව රෝගියෙකු ස්පර්ශ කරයි. මෙය සම්ප්‍රේෂණ ක්‍රමයෙන් කුමන ආකාරයේ උදාහරණයක්ද?",
+              "answerOptions": [
+                {
+                  "text": "සෘජු ස්පර්ශය (Direct Contact)",
+                  "rationale": "සෘජු ස්පර්ශය යනු අතරමැදි වස්තුවක් නොමැතිව පුද්ගලයාගෙන් පුද්ගලයාට ස්පර්ශ කිරීමයි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "වක්‍ර ස්පර්ශය (Indirect Contact)",
+                  "rationale": "ගිලන් රථය යනු රෝගකාරකය මූලාශ්‍රයෙන් රෝගියාට මාරු කරන අජීවී වස්තුවකි (ෆොමයිට්).",
+                  "isCorrect": true
+                },
+                {
+                  "text": "කහින/කිවිසුම් බිඳිති (Droplet)",
+                  "rationale": "කහින/කිවිසුම් බිඳිති සම්ප්‍රේෂණයට කෙටි දුරක් (මීටර 1ක් දක්වා) ගමන් කරන ශ්වසන ස්‍රාවයන් ඇතුළත් වේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "වාතය මඟින් (Airborne)",
+                  "rationale": "වාතය මඟින් සම්ප්‍රේෂණයට වාතයේ වැඩි කාලයක් අත්හිටුවා වැඩි දුරක් ගමන් කළ හැකි කුඩා අංශු ඇතුළත් වේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "ආසාදන පැතිරීම වැළැක්වීම සඳහා වඩාත්ම වැදගත් තනි ක්‍රියාමාර්ගය ලෙස සැලකෙන්නේ කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "සෑම විටම අත්වැසුම් පැළඳීම",
+                  "rationale": "අත්වැසුම් වැදගත් මෙවලමක් වන නමුත්, ඒවා වඩාත්ම මූලික ක්‍රියාවට ආදේශකයක් නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ස්ථිරසාර සහ ඵලදායී අත් සේදීම",
+                  "rationale": "ආසාදන කාරක සම්ප්‍රේෂණය සඳහා අත් ප්‍රධාන වාහකය වන අතර, මෙම චක්‍රය බිඳ දැමීමට වඩාත්ම ඵලදායී ක්‍රමය වන්නේ අත් සේදීමයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "නිසි පරිදි තියුණු ද්‍රව්‍ය බැහැර කිරීම",
+                  "rationale": "මෙය රුධිරයෙන් බෝවන රෝග සම්ප්‍රේෂණය වැළැක්වීම සඳහා අත්‍යවශ්‍ය වුවද, බොහෝ HAIs (Hospital Acquired Infections) සඳහා අත් සේදීම පුළුල් බලපෑමක් ඇති කරයි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "දෛනික පරිසරය පිරිසිදු කිරීම",
+                  "rationale": "පිරිසිදු කිරීම පරිසරයේ රෝගකාරක ගබඩා අඩු කරන නමුත්, සෘජු සම්ප්‍රේෂණයේ ප්‍රධාන වාහකය වන්නේ අත්ය.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "ලෝක සෞඛ්‍ය සංවිධානයේ (WHO) මාර්ගෝපදේශ අනුව, රෝගී සත්කාරයට අදාළව අත් සේදීම සිදු කළ යුත්තේ කවදාද?",
+              "answerOptions": [
+                {
+                  "text": "අත් දෘශ්‍යමාන ලෙස අපිරිසිදු වූ විට පමණක්",
+                  "rationale": "අත් දෘශ්‍යමාන ලෙස අපිරිසිදු වූ විට අත් සේදීම අවශ්‍ය වුවද, මෙය ප්‍රධාන අවස්ථා පහෙන් එකක් පමණි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ශරීර තරල සමඟ සෘජු ස්පර්ශයකින් පසුව පමණක්",
+                  "rationale": "මෙය වැදගත් අවස්ථාවක් වන නමුත්, රෝගී සත්කාරයේදී තවත් ප්‍රධාන ස්ථාන කිහිපයකදී ඵලදායී අත් සේදීම අවශ්‍ය වේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "අත් සේදීමේ නම් කරන ලද අවස්ථා 5 දී ම",
+                  "rationale": "WHO 'අවස්ථා 5' මඟින් ආසාදන සම්ප්‍රේෂණය වැළැක්වීමට අත් සේදීම අත්‍යවශ්‍ය වන්නේ කවදාද යන්න පිළිබඳ පුළුල් රාමුවක් සපයයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "විෂබීජ රහිත (aseptic) ක්‍රියා පටිපාටි සිදු කිරීමට පෙර පමණක්",
+                  "rationale": "විෂබීජ රහිත ක්‍රියා පටිපාටි සිදු කිරීම අත් සේදීම සඳහා තීරණාත්මක මොහොතක් වන නමුත්, එය අවශ්‍ය වන එකම අවස්ථාව එය නොවේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "ඇල්කොහොල් මත පදනම් වූ අත් සබන් (ABHR) වලට වඩා සබන් සහ ජලයෙන් අත් සේදීමට මනාපය ලැබෙන්නේ කවදාද?",
+              "answerOptions": [
+                {
+                  "text": "අත් දෘශ්‍යමාන ලෙස අපිරිසිදු වූ විට",
+                  "rationale": "සබන් සහ ජලය මඟින් ABHR වලට ඵලදායී ලෙස විනිවිද යා නොහැකි අපිරිසිදු, රුධිරය හෝ වෙනත් කාබනික ද්‍රව්‍ය ශාරීරිකව ඉවත් කිරීමට අවශ්‍ය වේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "සාමාන්‍ය රෝගී සම්බන්ධතාවයෙන් පසුව",
+                  "rationale": "සාමාන්‍ය සම්බන්ධතාවයෙන් පසුව අත් දෘශ්‍යමාන ලෙස අපිරිසිදු නොවූ විට කාර්යක්ෂමතාවය සහ ඵලදායීතාවය සඳහා ABHR සාමාන්‍යයෙන් වඩාත් සුදුසු වේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "පිරිසිදු ඇඳුම් පැළඳුම් යෙදීමට පෙර",
+                  "rationale": "අත් දෘශ්‍යමාන ලෙස අපිරිසිදු නොවේ නම්, මේ සඳහා ABHR සුදුසු වේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "විෂබීජහරණය කළ අත්වැසුම් (sterile gloves) පැළඳීමට පෙර",
+                  "rationale": "අත් දෘශ්‍යමාන ලෙස අපිරිසිදු නොවූ විට, විෂබීජහරණය කළ අත්වැසුම් පැළඳීමට පෙර ABHR සාමාන්‍යයෙන් භාවිතා වේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "පුද්ගලික ආරක්ෂක උපකරණ (PPE) පැළඳීම (Donning) සඳහා නිවැරදි අනුපිළිවෙල කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "අත් සේදීම, ගවුම, මුහුණු ආවරණය (Mask), අක්ෂි ආරක්ෂාව (Eye Protection), අත්වැසුම්",
+                  "rationale": "මෙම අනුපිළිවෙල මඟින් ආරම්භයේදී පිරිසිදු දෑත්, මුලින්ම ශරීරය ආරක්ෂා කිරීම, පසුව මුහුණ සහ අවසානයේ අත්ආවරණය වන අතර, රෝගී සම්බන්ධතාවයට පෙර අවසන් වශයෙන් ආවරණය වන අයිතමය වේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "ගවුම, අත්වැසුම්, මුහුණු ආවරණය (Mask), අක්ෂි ආරක්ෂාව (Eye Protection), අත් සේදීම",
+                  "rationale": "අත් සේදීම අවසන් වරට සිදු කිරීමෙන් ආරක්ෂාව සඳහා අත්වැසුම් පැළඳීමේ අරමුණ අසාර්ථක වනු ඇත. අත්වැසුම් අවසාන වශයෙන් පැළඳිය යුතුය.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "මුහුණු ආවරණය (Mask), අක්ෂි ආරක්ෂාව (Eye Protection), ගවුම, අත්වැසුම්, අත් සේදීම",
+                  "rationale": "මුහුණු ආරක්ෂාවට පසුව ගවුමක් පැළඳීම මුහුණු ආවරණයේ හෝ අක්ෂි ආරක්ෂාවේ පටි දූෂණය වීමට හේතු විය හැක.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "අත්වැසුම්, ගවුම, මුහුණු ආවරණය (Mask), අක්ෂි ආරක්ෂාව (Eye Protection), අත් සේදීම",
+                  "rationale": "පළමුව අත්වැසුම් පැළඳීම, සෙසු PPE පැළඳීමේදී ඒවා දූෂණය වීමට හේතු වන අතර, ඒවා අකාර්යක්ෂම කරයි.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "පුද්ගලික ආරක්ෂක උපකරණ (PPE) ගලවා දැමීමේදී (Doffing) ස්වයං-දූෂණය වැළැක්වීමට නිවැරදි පළමු පියවර කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "අක්ෂි ආරක්ෂාව ඉවත් කිරීම",
+                  "rationale": "අක්ෂි ආරක්ෂාව සාමාන්‍යයෙන් අත්වැසුම් සහ ගවුම ඉවත් කිරීමෙන් පසුව සිදු කරනු ලැබේ, මන්ද එය සාමාන්‍යයෙන් අඩු දූෂිත වන අතර ඔබේ මුහුණ ස්පර්ශ කිරීමට අවශ්‍ය වේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ගවුම ඉවත් කිරීම",
+                  "rationale": "ගවුම සාමාන්‍යයෙන් අත්වැසුම් ඉවත් කිරීමෙන් පසුව සිදු කරනු ලැබේ, මන්ද ගවුම ඉවත් කිරීමේදී අත්වැසුම් භාවිතා කරනු ලැබේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "අත්වැසුම් ඉවත් කිරීම",
+                  "rationale": "අත්වැසුම් වඩාත්ම දූෂිත අයිතමය ලෙස සැලකෙන අතර, වෙනත් PPE, මතුපිට හෝ ඔබම දූෂණය වීම වැළැක්වීම සඳහා පළමුව ඉවත් කරනු ලැබේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "මුහුණු ආවරණය (Mask) ඉවත් කිරීම",
+                  "rationale": "මුහුණු ආවරණය සාමාන්‍යයෙන් අවසාන වශයෙන් හෝ දෙවනුව ඉවත් කරනු ලැබේ, මන්ද එය ඉවත් කිරීමට ඔබේ මුහුණ ස්පර්ශ කිරීමට අවශ්‍ය වේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "අත්වැසුම් ආරක්ෂක බාධකයක් ලෙස සැලකෙන්නේ නමුත් අත් සේදීමට ආදේශකයක් නොවේ ඇයි?",
+              "answerOptions": [
+                {
+                  "text": "අත්වැසුම් මිල අධික වන අතර ඒවා සංරක්ෂණය කළ යුතුය.",
+                  "rationale": "පිරිවැය සම්පත් කළමනාකරණයේ සාධකයක් වුවද, අත්වැසුම් අත් සේදීමට ආදේශකයක් නොවන ප්‍රධාන හේතුව එය නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "අත්වැසුම් වල අන්වීක්ෂීය සිදුරු තිබිය හැකි අතර නුසුදුසු ලෙස ඉවත් කිරීමෙන් දූෂණය වීමට ඉඩ ඇත.",
+                  "rationale": "අත්වැසුම් නොබිඳිය හැකි නොවන අතර, නොපෙනෙන කඳුළු හෝ වැරදි ලෙස ඉවත් කිරීමේදී රෝගකාරක මාරු විය හැකි අතර, භාවිතයට පෙර සහ පසු අත් සේදීම අත්‍යවශ්‍ය වේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "අත්වැසුම් පැළඳීමට වඩා අත් සේදීම වේගවත්ය.",
+                  "rationale": "වේගය ABHR හි ප්‍රායෝගික ප්‍රතිලාභයක් වන නමුත්, ආසාදන පාලනය සඳහා අත්වැසුම් පමණක් ප්‍රමාණවත් නොවන බව එයින් පැහැදිලි නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "රෝගීන් අත්වැසුම් පැළඳ සිටින අත් වලට වඩා හිස් අත් වලට වැඩි කැමැත්තක් දක්වයි.",
+                  "rationale": "රෝගීන්ගේ කැමැත්ත ආරක්ෂාවට වඩා සුවපහසුව හෝ සෞන්දර්යය සඳහා ප්‍රමුඛත්වය දෙන ආසාදන පාලන ප්‍රතිපත්තියක් නියම නොකරයි.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "පහත සඳහන් දේවලින් සියලුම රෝගීන්ට යෙදිය යුතු 'සම්මත පූර්වෝපාය' (Standard Precaution) සඳහා උදාහරණයක් කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "සියලුම රෝගීන් හමුවීමේදී N95 ශ්වසන ආවරණයක් පැළඳීම",
+                  "rationale": "මෙය වාතයෙන් බෝවන රෝගකාරක සඳහා විශේෂිත සම්ප්‍රේෂණ මත පදනම් වූ පූර්වෝපායයක් මිස, සියලුම රෝගීන් සඳහා වන සම්මත එකක් නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "දන්නා බෝවන රෝගයක් සහිත රෝගීන් හුදකලා කිරීම",
+                  "rationale": "මෙය සම්ප්‍රේෂණ මත පදනම් වූ පූර්වෝපායයක් වන අතර, විශේෂිත ආසාදන සඳහා සම්මත පූර්වෝපායයන්ට අමතරව යොදනු ලැබේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "සියලුම රුධිරය, ශරීර තරල, ස්‍රාවයන්, බැහැර කිරීම් (දහඩිය හැර), අඛණ්ඩ නොවන සම සහ ශ්ලේෂ්මල පටල බෝවන බවට සැලකීම",
+                  "rationale": "මෙය සම්මත පූර්වෝපායයන්හි මූලික මූලධර්මයයි, රෝග විනිශ්චය නොසලකා සියලුම රෝගීන් ආසාදන මූලාශ්‍රයක් විය හැකි බව උපකල්පනය කරයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "සියලුම රෝගීන්ට පැමිණීමෙන් පසු ප්‍රතිජීවක ලබා දීම",
+                  "rationale": "මෙය සායනිකව නුසුදුසු වන අතර, ප්‍රතිජීවක ප්‍රතිරෝධයට හේතු විය හැකි අතර, එය ප්‍රතිකාරයක් මිස ආසාදන පාලන පූර්වෝපායයක් නොවේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "දූෂිත පෘෂ්ඨයන් හෝ වෛද්‍ය උපකරණ පිරිසිදු කිරීමේදී සහ විෂබීජහරණය කිරීමේදී අත්‍යවශ්‍ය පළමු පියවර කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "දූෂිත මතුපිටට කෙලින්ම විෂබීජනාශක යෙදීම",
+                  "rationale": "රුධිරය හෝ අපිරිසිදු වැනි කාබනික ද්‍රව්‍ය පවතින විට විෂබීජනාශක අඩු ඵලදායී වේ, මන්ද ඒවා රෝගකාරක ආවරණය කළ හැක.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "අත් සේදීම සිදු කිරීම",
+                  "rationale": "ඔබ ආරම්භ කිරීමට පෙර පිරිසිදු දෑත් හෝ අත්වැසුම් පැළඳිය යුතු වුවද, මෙම ක්‍රියාව මතුපිට ශාරීරිකව පිරිසිදු නොකරයි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "කාබනික ද්‍රව්‍ය ඉවත් කිරීම සඳහා මතුපිට ශාරීරිකව පිරිසිදු කිරීම",
+                  "rationale": "අපිරිසිදුකම් ඉවත් කිරීම (පිරිසිදු කිරීම) මඟින් විෂබීජනාශක වලට රෝගකාරක සමඟ සෘජු සම්බන්ධතා ඇති කර ගැනීමට සහ ඵලදායී ලෙස ක්‍රියා කිරීමට ඉඩ සලසයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "මතුපිට සම්පූර්ණයෙන්ම වාතයේ වියළා ගැනීම",
+                  "rationale": "මෙය පිරිසිදු කිරීමෙන් හා විෂබීජහරණය කිරීමෙන් පසු සිදු වන පියවරක් මිස, ක්‍රියාවලියේ පළමු පියවර නොවේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "පැරමෙඩිකල් ක්‍රියාකාරකම් වලදී, නිරන්තර පරිසර පිරිසිදු කිරීම සහ විෂබීජහරණය සඳහා සැලකිය යුතු අවධානයක් අවශ්‍ය වන ප්‍රදේශය කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "කාර්යාල පරිපාලන ප්‍රදේශ",
+                  "rationale": "මෙම ප්‍රදේශවලට සාමාන්‍යයෙන් රෝගීන් සමඟ සෘජු සම්බන්ධතා අඩු වන අතර, එබැවින් සායනික අවකාශයන්ට සාපේක්ෂව රෝගකාරක සම්ප්‍රේෂණය වීමේ අවදානම අඩුය.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ගිලන් රථ අභ්‍යන්තර මතුපිට සහ වෛද්‍ය උපකරණ",
+                  "rationale": "මෙම ප්‍රදේශ රෝගී සත්කාරයට සෘජුවම සම්බන්ධ වන අතර, නිතර ස්පර්ශ වන අතර, රෝගකාරක රැඳී තිබිය හැකි බැවින්, කඩිසර පිරිසිදු කිරීම සහ විෂබීජහරණය අවශ්‍ය වේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "කාර්ය මණ්ඩලයේ පුද්ගලික වාහන",
+                  "rationale": "පුද්ගලික සනීපාරක්ෂාව වැදගත් වුවද, පුද්ගලික වාහන යනු සෞඛ්‍ය සේවා මට්ටමේ නිරන්තර විෂබීජහරණයක් අවශ්‍ය රෝගී සත්කාර පරිසරයේ කොටසක් නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "රෝගීන්ගේ පවුල් රැඳී සිටින කාමර",
+                  "rationale": "රෝහල් සැකසුමකදී වැදගත් වුවද, පැරමෙඩිකල්වරුන්ට ඔවුන්ගේ ප්‍රාථමික සේවා ස්ථානයට සාපේක්ෂව මෙම ප්‍රදේශ පාලනය කිරීමේ හෝ වගකීම දැරීමේ සෘජු හැකියාව අඩුය.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "සෞඛ්‍ය සේවා අපද්‍රව්‍ය උත්පාදන ස්ථානයේදී වෙන් කිරීමේ ප්‍රධාන අරමුණ කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "අපද්‍රව්‍ය බඳුන් වඩාත් සෞන්දර්යාත්මකව ප්‍රියජනක කිරීම",
+                  "rationale": "පිළිවෙලට ඇති පරිසරයක් යෝග්‍ය වුවද, සෞන්දර්යය අපද්‍රව්‍ය වෙන් කිරීමේ ප්‍රාථමික ආරක්ෂක හෝ මහජන සෞඛ්‍ය ඉලක්කයක් නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "අපද්‍රව්‍යවල මුළු පරිමාව අඩු කිරීම",
+                  "rationale": "කාර්යක්ෂම බැහැර කිරීම මඟින් පරිමාව අඩු කළ හැකි වුවද, වෙන් කිරීම ප්‍රධාන වශයෙන් අරමුණු කරන්නේ අනතුරු කළමනාකරණය කිරීම මිස පරිමාව පමණක් නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ආසාදන, තුවාල සහ පාරිසරික දූෂණය වැළැක්වීම",
+                  "rationale": "දූෂිත, තියුණු හෝ අන්තරායකර අපද්‍රව්‍ය නිවැරදිව හසුරුවා බැහැර කිරීමෙන් මෙම අනතුරු සෘජුවම අවම වේ.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "අපද්‍රව්‍ය එකතු කිරීමේ කාලසටහන් සරල කිරීම",
+                  "rationale": "ලොජිස්ටික් සරල කිරීම ප්‍රතිලාභයකි, නමුත් එය අපද්‍රව්‍ය වෙන් කිරීමේ මූලික ආරක්ෂක සහ මහජන සෞඛ්‍ය අරමුණ නොවේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "භාවිතා කළ ඉඳිකටුවක් භාවිතයෙන් වහාම බැහැර කළ යුත්තේ කොහිද?",
+              "answerOptions": [
+                {
+                  "text": "සාමාන්‍ය අපද්‍රව්‍ය බඳුනක",
+                  "rationale": "තියුණු ද්‍රව්‍ය සාමාන්‍ය අපද්‍රව්‍ය බඳුනක බැහැර කිරීමෙන් අපද්‍රව්‍ය හසුරුවන්නන්ට සිදුරු තුවාල සිදුවීමේ ඉහළ අවදානමක් ඇති අතර එය දැඩි ලෙස තහනම්ය.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "භාවිතා කරන ස්ථානයේම නම් කරන ලද තියුණු ද්‍රව්‍ය බහාලුමක",
+                  "rationale": "මෙය ආරක්ෂිතම සහ වඩාත්ම සුදුසු ක්‍රියාව වන අතර, එය වහාම තියුණු ද්‍රව්‍ය අඩංගු වන අතර ඉඳිකටු ඇනීම් තුවාල වළක්වයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "පසුව බැහැර කිරීම සඳහා විෂබීජහරණය කළ තැටියක",
+                  "rationale": "තැටියක නිරාවරණය වූ තියුණු ද්‍රව්‍යයක් තැබීමෙන් අවට සිටින ඕනෑම කෙනෙකුට අනවශ්‍ය හා දිගු තුවාල අවදානමක් ඇති වේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "සාමාන්‍ය ජෛව අන්තරායකර බෑගයක",
+                  "rationale": "ඉඳිකටුවකට ප්ලාස්ටික් ජෛව අන්තරායකර බෑගයක් පහසුවෙන් සිදුරු කළ හැකි අතර, එහි අඛණ්ඩතාවයට හානි කර තියුණු ද්‍රව්‍ය අනතුරක් ඇති කරයි.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "තියුණු ද්‍රව්‍ය බහාලුමක් ප්‍රතිස්ථාපනය කළ යුත්තේ කවදාද?",
+              "answerOptions": [
+                {
+                  "text": "සෑම සේවා මුරයක අවසානයේදී පමණක්",
+                  "rationale": "සේවා මුරයක අවසානය වන තෙක් බලා සිටීමෙන් අධික ලෙස පිරී යාමට සහ භාවිතය වැඩි නම් අවදානම වැඩි වීමට ඉඩ ඇත.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "එය සම්පූර්ණයෙන්ම පිටාර ගලන විට",
+                  "rationale": "තියුණු ද්‍රව්‍ය බහාලුමක් පිටාර ගැලීමට ඉඩ දීම අතිශයින්ම භයානක වන අතර ඉඳිකටු ඇනීම් තුවාල වීමේ අවදානම සෘජුවම වැඩි කරයි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "එය දළ වශයෙන් තුනෙන් දෙකක් හෝ හතරෙන් තුනක් පිරී ඇති විට",
+                  "rationale": "මෙම මට්ටම මඟින් ආරක්ෂිතව තියුණු ද්‍රව්‍ය ඇතුළු කිරීමට ප්‍රමාණවත් ඉඩක් ඇති බව සහතික වන අතර පිටාර ගැලීමේ හෝ තුවාල වීමේ අවදානමක් නොමැත.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "ආයතන කළමනාකරු විසින් උපදෙස් දුන් විට",
+                  "rationale": "ආයතනික ප්‍රතිපත්තිය මෙයට මඟ පෙන්වන අතර, ආරක්ෂිත පිරවුම් මට්ටම විශ්වීය ආරක්ෂිත ප්‍රමිතියක් වන අතර එය හුදෙක් කළමනාකරුවෙකුගේ උපදෙස් පමණක් නොවේ.",
+                  "isCorrect": false
+                }
+              ]
+            },
+            {
+              "question": "ඉඳිකටු ඇනීම් තුවාල (NSIs) සමඟ සම්බන්ධ ප්‍රධාන අවදානම කුමක්ද?",
+              "answerOptions": [
+                {
+                  "text": "සුළු වේදනාව සහ අපහසුතාව පමණක්",
+                  "rationale": "වේදනාව ඇති වුවද, මෙය බරපතල සෞඛ්‍ය ප්‍රතිවිපාක ඇතිවීමේ හැකියාව සැලකිය යුතු ලෙස අවතක්සේරු කරයි.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "රුධිරයෙන් බෝවන රෝගකාරක සම්ප්‍රේෂණය වීමේ හැකියාව",
+                  "rationale": "මෙය HBV, HCV සහ HIV වැනි වෛරස් සම්ප්‍රේෂණය ඇතුළුව වඩාත්ම වැදගත් හා බරපතල අවදානමයි.",
+                  "isCorrect": true
+                },
+                {
+                  "text": "ඉඳිකටුවෙහිම පිරිහීම",
+                  "rationale": "ඉඳිකටුවේ භෞතික තත්වය තුවාල වීමේ හා ආසාදන අවදානමට අදාළ නොවේ.",
+                  "isCorrect": false
+                },
+                {
+                  "text": "ඉඳිකටු ද්‍රව්‍යයට අසාත්මිකතා ප්‍රතික්‍රියා ඇතිවීමේ අවදානම",
+                  "rationale": "සමහර ද්‍රව්‍ය සමඟ අසාත්මිකතා ප්‍රතික්‍රියා ඇතිවිය හැකි වුවද, ඒවා NSIs සමඟ සම්බන්ධ ප්‍රධාන, පුළුල් අවදානම නොවේ.",
+                  "isCorrect": false
+                }
+              ]
+            }
+          ]
+        };
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedAnswer = null;
+
+        const questionNumberElem = document.getElementById('question-number');
+        const questionTextElem = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackTextElem = document.getElementById('feedback-text');
+        const nextButton = document.getElementById('next-button');
+        const quizArea = document.getElementById('quiz-area');
+        const resultArea = document.getElementById('result-area');
+        const scoreDisplay = document.getElementById('score-display');
+        const totalQuestionsDisplay = document.getElementById('total-questions-display');
+        const retakeQuizButton = document.getElementById('retake-quiz-button');
+
+        function loadQuestion() {
+            if (currentQuestionIndex < quizData.questions.length) {
+                const question = quizData.questions[currentQuestionIndex];
+                questionNumberElem.textContent = `ප්‍රශ්නය ${currentQuestionIndex + 1} න් ${quizData.questions.length}`;
+                questionTextElem.textContent = question.question;
+                optionsContainer.innerHTML = '';
+                feedbackContainer.classList.remove('show', 'correct', 'incorrect');
+                feedbackTextElem.textContent = '';
+                nextButton.disabled = true;
+                selectedAnswer = null; // Reset selected answer
+
+                // Shuffle answer options
+                const shuffledOptions = [...question.answerOptions];
+                for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+                }
+
+                shuffledOptions.forEach((option, index) => {
+                    const inputId = `option${index}`;
+                    const radioInput = document.createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = 'answer';
+                    radioInput.id = inputId;
+                    radioInput.value = option.text;
+
+                    const label = document.createElement('label');
+                    label.htmlFor = inputId;
+                    label.textContent = option.text;
+
+                    label.addEventListener('click', () => {
+                        if (selectedAnswer === null) {
+                            selectedAnswer = option;
+                            evaluateAnswer(option, label);
+                        }
+                    });
+
+                    optionsContainer.appendChild(radioInput);
+                    optionsContainer.appendChild(label);
+                });
+            } else {
+                showResult();
+            }
+        }
+
+        function evaluateAnswer(selectedOption, clickedLabel) {
+            const question = quizData.questions[currentQuestionIndex];
+            const allLabels = optionsContainer.querySelectorAll('label');
+            const allRadios = optionsContainer.querySelectorAll('input[type="radio"]');
+
+            // Disable all options after selection
+            allLabels.forEach(label => label.classList.add('disabled'));
+            allRadios.forEach(radio => radio.disabled = true);
+
+
+            feedbackContainer.classList.add('show');
+
+            if (selectedOption.isCorrect) {
+                score++;
+                feedbackContainer.classList.add('correct');
+                feedbackTextElem.textContent = 'නිවැරදියි! ' + selectedOption.rationale;
+                clickedLabel.classList.add('correct-answer');
+            } else {
+                feedbackContainer.classList.add('incorrect');
+                feedbackTextElem.textContent = 'වැරදියි. ' + selectedOption.rationale;
+                clickedLabel.classList.add('selected-incorrect');
+                // Find and highlight the correct answer
+                const correctAnswerOption = question.answerOptions.find(opt => opt.isCorrect);
+                if (correctAnswerOption) {
+                    allLabels.forEach(label => {
+                        if (label.textContent === correctAnswerOption.text) {
+                            label.classList.add('correct-answer');
+                        }
+                    });
+                }
+            }
+            nextButton.disabled = false;
+        }
+
+        function showResult() {
+            quizArea.style.display = 'none';
+            resultArea.style.display = 'block';
+            scoreDisplay.textContent = score;
+            totalQuestionsDisplay.textContent = quizData.questions.length;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultArea.style.display = 'none';
+            quizArea.style.display = 'block';
+            loadQuestion();
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            loadQuestion();
+        });
+
+        retakeQuizButton.addEventListener('click', restartQuiz);
+
+        // Initial load
+        loadQuestion();
+    </script>
+</body>
+</html>
